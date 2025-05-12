@@ -17,12 +17,19 @@
 </head>
 <body>
     <h1>Real-time Face & Person Detection</h1>
-    <p id="status">Loading models and waiting for camera access...</p>
 
-    <div class="video-container">
+    <!-- Add Start Button -->
+    <button id="start-button">Start Detection</button>
+    <p id="status">Click "Start Detection" to begin.</p>
+
+    <!-- Hide video/canvas initially -->
+    <div class="video-container" id="video-canvas-container" style="display: none;">
         <video id="video" playsinline muted autoplay></video>
         <canvas id="canvas"></canvas>
     </div>
+
+    <!-- Add Switch Camera Button (hidden initially) -->
+    <button id="switch-camera" style="display: none; margin-top: 10px;">Switch Camera</button>
 
     <script src="script.js"></script>
 </body>

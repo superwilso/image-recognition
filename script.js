@@ -242,18 +242,14 @@ async function runDetectionFrame() {
 
     // --- Start Detection ---
     try {
-        // Use tf.tidy to automatically clean up intermediate tensors
-        const predictions = await tf.tidy(async () => {
-            // Detect faces first (often faster or primary interest)
-            const facePredictions = await faceDetector.estimateFaces(videoElement, {
-                flipHorizontal: false // Detection is on the raw stream *before* CSS flipping
-            });
-
-            // Detect objects using Coco-SSD
-            const cocoPredictions = await cocoSsdModel.detect(videoElement);
-
-            return { faces: facePredictions, objects: cocoPredictions };
+        // ***** START CHANGE *****
+        // Perform detections directly, *without* tf.tidy wrapping them
+        const facePredictions = await faceDetector.estimateFaces(videoElement, {
+            flipHorizontal: false // Detection is on the raw stream *before* CSS flipping
         });
+
+        const cocoPredictions = await cocoSsdModel.detect(videoElement);
+        // ***** END CHANGE *****
 
 
         // --- Draw Results ---
@@ -261,26 +257,37 @@ async function runDetectionFrame() {
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
         // Draw Coco-SSD Predictions (only 'person')
-        predictions.objects.forEach(prediction => {
-            if (prediction.class === 'person') {
-                drawBoundingBox(prediction, DRAW_BOX_COLOR_PERSON);
-            }
-            // Example: Draw other objects if needed
-            // else if (prediction.class === 'cell phone') {
-            //     drawBoundingBox(prediction, '#00BCD4'); // Cyan for cell phone
-            // }
-        });
+        // Check if cocoPredictions is not null/undefined before iterating
+        if (cocoPredictions) {
+            cocoPredictions.forEach(prediction => {
+                if (prediction.class === 'person') {
+                    drawBoundingBox(prediction, DRAW_BOX_COLOR_PERSON);
+                }
+                // Example: Draw other objects if needed
+                // else if (prediction.class === 'cell phone') {
+                //     drawBoundingBox(prediction, '#00BCD4'); // Cyan for cell phone
+                // }
+            });
+        } else {
+            console.log("No COCO-SSD predictions received.");
+        }
+
 
         // Draw Face Predictions
-        predictions.faces.forEach(prediction => {
-            drawBoundingBox(prediction, DRAW_BOX_COLOR_FACE);
-        });
+        // Check if facePredictions is not null/undefined before iterating
+        if (facePredictions) {
+            facePredictions.forEach(prediction => {
+                drawBoundingBox(prediction, DRAW_BOX_COLOR_FACE);
+            });
+        } else {
+            console.log("No Face predictions received.");
+        }
+
 
     } catch (error) {
-        console.error("Error during detection frame:", error);
+        console.error("Error during detection frame:", error); // Log the specific error
         updateStatus("Error during detection. Check console.");
         stopDetectionLoop(); // Stop detection on error
-        // Optionally: Show start button again or attempt recovery
     }
 
     // --- Loop ---
